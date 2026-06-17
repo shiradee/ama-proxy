@@ -1,7 +1,7 @@
 // api/chat.js
 // Vercel Node.js Serverless Function — proxies shirakates.com -> Anthropic API,
-// and (optionally) logs each question to a Google Sheet via LOG_WEBHOOK_URL.
-// ANTHROPIC_API_KEY and LOG_WEBHOOK_URL live in Vercel env vars.
+// and logs each question to Airtable via AIRTABLE_TOKEN, AIRTABLE_BASE_ID, AIRTABLE_TABLE_ID.
+// ANTHROPIC_API_KEY, AIRTABLE_TOKEN, AIRTABLE_BASE_ID, AIRTABLE_TABLE_ID live in Vercel env vars.
 
 const SYSTEM_PROMPT = `You are Ama — the portfolio agent for Shira Kates, representing her to recruiters, hiring managers, collaborators, and peers at shirakates.com. You speak with confidence, warmth, and sharp wit.
 
@@ -116,31 +116,34 @@ function decodeHeader(v) {
   try { return decodeURIComponent(v); } catch { return v; }
 }
 
-// Fire the log to the Google Sheet webhook. Never throws — logging must never
-// break the chat. Capped with a short timeout so a slow Sheet can't hang Ama.
+// Log each question to Airtable. Never throws — logging must never break chat.
 async function logQuestion(req, messages, replyText) {
-  const url = process.env.LOG_WEBHOOK_URL;
-  if (!url) return; // logging is optional; no webhook set = skip silently
+  const token   = process.env.AIRTABLE_TOKEN;
+  const baseId  = process.env.AIRTABLE_BASE_ID;
+  const tableId = process.env.AIRTABLE_TABLE_ID;
+  if (!token || !baseId || !tableId) return;
   try {
     const lastUser = [...messages].reverse().find((m) => m.role === 'user');
-    const payload = {
-      timestamp: new Date().toISOString(),
-      sessionId: (req.body && req.body.sessionId) || '',
-      question: lastUser ? lastUser.content : '',
-      reply: replyText || '',
-      turn: messages.length,
-      city: decodeHeader(req.headers['x-vercel-ip-city']),
-      region: decodeHeader(req.headers['x-vercel-ip-country-region']),
-      country: req.headers['x-vercel-ip-country'] || '',
-      referer: req.headers['referer'] || req.headers['referrer'] || '',
-      userAgent: req.headers['user-agent'] || '',
+    const fields = {
+      Timestamp: new Date().toISOString(),
+      Session:   (req.body && req.body.sessionId) || '',
+      Name:      lastUser ? lastUser.content : '',
+      Reply:     replyText || '',
+      Turn:      messages.length,
+      City:      decodeHeader(req.headers['x-vercel-ip-city']),
+      Region:    decodeHeader(req.headers['x-vercel-ip-country-region']),
+      Country:   req.headers['x-vercel-ip-country'] || '',
+      Referer:   req.headers['referer'] || req.headers['referrer'] || '',
     };
     const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 2500);
-    await fetch(url, {
+    const t = setTimeout(() => ctrl.abort(), 3000);
+    await fetch(`https://api.airtable.com/v0/${baseId}/${tableId}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ fields }),
       signal: ctrl.signal,
     });
     clearTimeout(t);
@@ -148,6 +151,7 @@ async function logQuestion(req, messages, replyText) {
     /* swallow — never break the chat on a logging failure */
   }
 }
+
 
 export default async function handler(req, res) {
   applyCors(req, res);
