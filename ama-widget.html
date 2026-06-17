@@ -1,336 +1,321 @@
-<!-- AMA WIDGET — paste before </body> in index.html -->
-<!-- Replace YOUR_VERCEL_URL with your actual Vercel deployment URL e.g. https://ama-proxy.vercel.app -->
+<!-- ============================================================= -->
+<!-- AMA WIDGET  ·  paste this whole block right before </body> in index.html -->
+<!-- 1 thing to edit: replace YOUR_VERCEL_URL on the PROXY_URL line below -->
+<!-- ============================================================= -->
 
 <style>
+  /* ---- Trigger (the attention-grabbing part) ---- */
   .ama-trigger {
     position: fixed;
-    bottom: 28px;
-    right: 28px;
-    z-index: 500;
+    bottom: 26px;
+    right: 26px;
+    z-index: 9000;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
     gap: 12px;
   }
 
-  .ama-bubble-hint {
-    background: #1A1A1A;
-    color: white;
-    font-family: 'Trebuchet MS', sans-serif;
-    font-size: 12px;
-    padding: 8px 14px;
-    border-radius: 2px;
-    white-space: nowrap;
+  /* Nudge bubble that pops in after a delay */
+  .ama-nudge {
+    position: relative;
+    max-width: 230px;
+    background: #FFFFFF;
+    border: 1px solid #E0AE92;
+    border-radius: 14px 14px 14px 2px;
+    padding: 12px 30px 12px 14px;
+    box-shadow: 0 10px 30px rgba(29,20,18,0.16);
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-style: italic;
+    font-size: 17px;
+    line-height: 1.35;
+    color: #1D1412;
     opacity: 0;
-    transform: translateY(6px);
-    transition: all 0.3s ease;
+    transform: translateY(8px) scale(0.96);
+    transform-origin: bottom right;
     pointer-events: none;
+    transition: opacity .35s ease, transform .35s ease;
   }
-
-  .ama-trigger:hover .ama-bubble-hint {
-    opacity: 1;
-    transform: translateY(0);
+  .ama-nudge.show { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+  .ama-nudge::after {
+    content: '';
+    position: absolute;
+    right: 22px;
+    bottom: -7px;
+    width: 13px; height: 13px;
+    background: #FFFFFF;
+    border-right: 1px solid #E0AE92;
+    border-bottom: 1px solid #E0AE92;
+    transform: rotate(45deg);
   }
+  .ama-nudge b { font-style: normal; font-weight: 600; color: #C4622D; }
+  .ama-nudge-x {
+    position: absolute;
+    top: 6px; right: 8px;
+    font-family: 'Inter', sans-serif;
+    font-style: normal;
+    font-size: 15px;
+    line-height: 1;
+    color: #B6A89E;
+    background: none; border: none;
+    cursor: pointer; padding: 2px;
+  }
+  .ama-nudge-x:hover { color: #1D1412; }
 
-  .ama-btn {
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
+  /* The pill button */
+  .ama-pill {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 8px 18px 8px 8px;
     background: #C4622D;
     border: none;
+    border-radius: 999px;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 16px rgba(196,98,45,0.35);
-    transition: transform 0.2s, background 0.2s;
-    flex-shrink: 0;
+    box-shadow: 0 8px 24px rgba(196,98,45,0.42);
+    transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+    animation: amaPillIn .55s cubic-bezier(.2,.9,.3,1.2) .2s both, amaWiggle .9s ease 1.6s 1;
   }
+  .ama-pill:hover { transform: translateY(-2px) scale(1.03); background: #A84E22; box-shadow: 0 12px 30px rgba(196,98,45,0.5); }
+  .ama-pill:focus-visible { outline: 3px solid #1D1412; outline-offset: 2px; }
 
-  .ama-btn:hover { transform: scale(1.08); background: #A84E22; }
-
-  .ama-btn svg { width: 22px; height: 22px; fill: white; }
-
-  .ama-panel {
-    position: fixed;
-    bottom: 96px;
-    right: 28px;
-    width: 380px;
-    height: 560px;
-    z-index: 501;
-    background: #FFFFFF;
-    border: 1px solid #D9CEC5;
-    border-radius: 4px;
-    overflow: hidden;
-    display: none;
-    flex-direction: column;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.15);
-    animation: amaSlideIn 0.25s ease;
-  }
-
-  .ama-panel.open { display: flex; }
-
-  @keyframes amaSlideIn {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .ama-header {
-    background: #1A1A1A;
-    padding: 14px 16px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-shrink: 0;
-  }
-
-  .ama-avatar {
-    width: 32px;
-    height: 32px;
+  .ama-pill-av {
+    position: relative;
+    width: 38px; height: 38px;
     border-radius: 50%;
-    background: #C4622D;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Trebuchet MS', sans-serif;
-    font-size: 11px;
-    font-weight: 700;
-    color: white;
-    letter-spacing: 0.05em;
+    background: #FAF0E8;
+    color: #C4622D;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 24px;
+    line-height: 1;
     flex-shrink: 0;
   }
-
-  .ama-header-text { flex: 1; }
-
-  .ama-name {
-    font-family: 'Trebuchet MS', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    color: #FFFFFF;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+  /* pulsing ring to draw the eye */
+  .ama-pill-av::before {
+    content: '';
+    position: absolute; inset: -4px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.85);
+    animation: amaRing 2.4s ease-out infinite;
   }
 
-  .ama-tagline {
-    font-family: 'Trebuchet MS', sans-serif;
-    font-size: 10px;
-    color: rgba(255,255,255,0.4);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+  .ama-pill-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: #FFFFFF;
+    white-space: nowrap;
+  }
+  .ama-pill-label small {
+    display: block;
+    font-weight: 400;
+    font-size: 11px;
+    color: rgba(255,255,255,0.78);
+    letter-spacing: 0.02em;
     margin-top: 1px;
   }
 
-  .ama-close {
-    background: none;
-    border: none;
-    color: rgba(255,255,255,0.5);
-    cursor: pointer;
-    font-size: 20px;
-    line-height: 1;
-    padding: 0 0 2px;
-    transition: color 0.15s;
+  @keyframes amaPillIn {
+    from { opacity: 0; transform: translateY(16px) scale(0.9); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes amaWiggle {
+    0%,100% { transform: rotate(0); }
+    20% { transform: rotate(-3deg); }
+    40% { transform: rotate(3deg); }
+    60% { transform: rotate(-2deg); }
+    80% { transform: rotate(1deg); }
+  }
+  @keyframes amaRing {
+    0%   { transform: scale(1);   opacity: 0.9; }
+    70%  { transform: scale(1.45); opacity: 0; }
+    100% { transform: scale(1.45); opacity: 0; }
   }
 
-  .ama-close:hover { color: white; }
+  /* ---- Chat panel ---- */
+  .ama-panel {
+    position: fixed;
+    bottom: 26px;
+    right: 26px;
+    width: 384px;
+    height: 580px;
+    max-height: calc(100vh - 52px);
+    z-index: 9001;
+    background: #FFFFFF;
+    border: 1px solid #D9CEC5;
+    border-radius: 16px;
+    overflow: hidden;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 18px 56px rgba(29,20,18,0.22);
+  }
+  .ama-panel.open { display: flex; animation: amaPanelIn .26s cubic-bezier(.2,.9,.3,1.1); }
+  @keyframes amaPanelIn {
+    from { opacity: 0; transform: translateY(16px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
 
-  .ama-status {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: #C4622D;
-    animation: amaPulse 2s infinite;
+  .ama-header {
+    background: #1D1412;
+    padding: 15px 16px;
+    display: flex; align-items: center; gap: 11px;
     flex-shrink: 0;
   }
-
-  @keyframes amaPulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.35; }
+  .ama-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: #C4622D;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 22px;
+    color: #FAF0E8;
+    flex-shrink: 0;
   }
+  .ama-header-text { flex: 1; }
+  .ama-name {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 22px;
+    line-height: 1;
+    color: #FFFFFF;
+  }
+  .ama-tagline {
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    color: rgba(255,255,255,0.45);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 3px;
+  }
+  .ama-status {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #6BCB77; box-shadow: 0 0 0 0 rgba(107,203,119,0.5);
+    animation: amaPulse 2.2s infinite; flex-shrink: 0;
+  }
+  @keyframes amaPulse {
+    0%   { box-shadow: 0 0 0 0 rgba(107,203,119,0.5); }
+    70%  { box-shadow: 0 0 0 7px rgba(107,203,119,0); }
+    100% { box-shadow: 0 0 0 0 rgba(107,203,119,0); }
+  }
+  .ama-close {
+    background: none; border: none;
+    color: rgba(255,255,255,0.5);
+    cursor: pointer; font-size: 22px; line-height: 1;
+    padding: 0 2px 3px; transition: color .15s;
+  }
+  .ama-close:hover { color: #FFFFFF; }
 
   .ama-messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    flex: 1; overflow-y: auto;
+    padding: 18px 16px;
+    display: flex; flex-direction: column; gap: 13px;
     background: #FAF0E8;
   }
-
-  .ama-msg {
-    display: flex;
-    gap: 8px;
-    align-items: flex-start;
-    animation: amaMsgIn 0.25s ease;
-  }
-
-  @keyframes amaMsgIn {
-    from { opacity: 0; transform: translateY(4px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
+  .ama-msg { display: flex; gap: 8px; align-items: flex-start; animation: amaMsgIn .25s ease; }
+  @keyframes amaMsgIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
   .ama-msg.user { flex-direction: row-reverse; }
-
   .ama-msg-av {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Trebuchet MS', sans-serif;
-    font-size: 9px;
-    font-weight: 700;
-    flex-shrink: 0;
-    margin-top: 2px;
+    width: 26px; height: 26px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 15px; flex-shrink: 0; margin-top: 1px;
   }
-
-  .ama-msg-av.a { background: #C4622D; color: white; }
-  .ama-msg-av.u { background: #1A1A1A; color: white; }
-
+  .ama-msg-av.a { background: #C4622D; color: #FAF0E8; }
+  .ama-msg-av.u {
+    background: #1D1412; color: #FFFFFF;
+    font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: .03em;
+  }
   .ama-msg-bubble {
     max-width: 82%;
-    padding: 9px 12px;
-    border-radius: 3px;
-    font-family: 'Trebuchet MS', sans-serif;
-    font-size: 13px;
-    line-height: 1.6;
-    color: #1A1A1A;
+    padding: 10px 13px;
+    border-radius: 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px; line-height: 1.55;
+    color: #1D1412;
   }
+  .ama-msg.ama .ama-msg-bubble { background: #FFFFFF; border: 1px solid #E4D8CE; border-top-left-radius: 3px; }
+  .ama-msg.user .ama-msg-bubble { background: #1D1412; color: #F5F0EB; border-top-right-radius: 3px; }
 
-  .ama-msg.ama .ama-msg-bubble {
-    background: #FFFFFF;
-    border: 1px solid #D9CEC5;
-    border-top-left-radius: 0;
-  }
-
-  .ama-msg.user .ama-msg-bubble {
-    background: #1A1A1A;
-    color: #FFFFFF;
-    border-top-right-radius: 0;
-  }
-
-  .ama-typing {
-    display: flex;
-    gap: 4px;
-    align-items: center;
-    padding: 12px;
-  }
-
-  .ama-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: #C4622D;
-    animation: amaDot 1.2s infinite;
-  }
-
-  .ama-dot:nth-child(2) { animation-delay: 0.2s; }
-  .ama-dot:nth-child(3) { animation-delay: 0.4s; }
-
-  @keyframes amaDot {
-    0%, 80%, 100% { transform: translateY(0); opacity: 0.3; }
-    40% { transform: translateY(-4px); opacity: 1; }
-  }
+  .ama-typing { display: flex; gap: 4px; align-items: center; padding: 4px 2px; }
+  .ama-dot { width: 6px; height: 6px; border-radius: 50%; background: #C4622D; animation: amaDot 1.2s infinite; }
+  .ama-dot:nth-child(2) { animation-delay: .2s; }
+  .ama-dot:nth-child(3) { animation-delay: .4s; }
+  @keyframes amaDot { 0%,80%,100% { transform: translateY(0); opacity: .3; } 40% { transform: translateY(-4px); opacity: 1; } }
 
   .ama-suggestions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: 10px 14px;
-    background: #F5EDE8;
-    border-top: 1px solid #D9CEC5;
-    flex-shrink: 0;
+    display: flex; flex-wrap: wrap; gap: 6px;
+    padding: 11px 14px;
+    background: #F5EDE8; border-top: 1px solid #E4D8CE; flex-shrink: 0;
   }
-
   .ama-sug {
-    font-family: 'Trebuchet MS', sans-serif;
-    font-size: 11px;
-    padding: 5px 10px;
-    border: 1px solid #C4622D;
-    border-radius: 2px;
-    background: transparent;
-    color: #C4622D;
-    cursor: pointer;
-    transition: all 0.15s;
-    text-align: left;
+    font-family: 'Inter', sans-serif; font-size: 12px;
+    padding: 6px 11px;
+    border: 1px solid #C4622D; border-radius: 999px;
+    background: transparent; color: #C4622D;
+    cursor: pointer; transition: all .15s;
   }
-
-  .ama-sug:hover { background: #C4622D; color: white; }
+  .ama-sug:hover { background: #C4622D; color: #FFFFFF; }
 
   .ama-input-row {
-    display: flex;
-    gap: 8px;
+    display: flex; gap: 8px;
     padding: 12px 14px;
-    border-top: 1px solid #D9CEC5;
-    background: #FFFFFF;
-    flex-shrink: 0;
-    align-items: flex-end;
+    border-top: 1px solid #E4D8CE; background: #FFFFFF;
+    flex-shrink: 0; align-items: flex-end;
   }
-
   .ama-input {
     flex: 1;
-    font-family: 'Trebuchet MS', sans-serif;
-    font-size: 13px;
-    padding: 8px 12px;
-    border: 1px solid #D9CEC5;
-    border-radius: 2px;
-    background: #FAF0E8;
-    color: #1A1A1A;
-    resize: none;
-    outline: none;
-    line-height: 1.5;
-    min-height: 36px;
-    max-height: 80px;
-    overflow-y: auto;
+    font-family: 'Inter', sans-serif; font-size: 14px;
+    padding: 9px 12px;
+    border: 1px solid #D9CEC5; border-radius: 10px;
+    background: #FAF0E8; color: #1D1412;
+    resize: none; outline: none; line-height: 1.5;
+    min-height: 38px; max-height: 84px; overflow-y: auto;
   }
-
   .ama-input:focus { border-color: #C4622D; }
-  .ama-input::placeholder { color: #7A6A60; }
-
+  .ama-input::placeholder { color: #9A8A80; }
   .ama-send {
-    font-family: 'Trebuchet MS', sans-serif;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 8px 14px;
-    background: #C4622D;
-    color: white;
-    border: none;
-    border-radius: 2px;
-    cursor: pointer;
-    transition: background 0.15s;
-    height: 36px;
-    flex-shrink: 0;
+    font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600;
+    letter-spacing: .04em;
+    padding: 0 16px; height: 38px;
+    background: #C4622D; color: #FFFFFF;
+    border: none; border-radius: 10px; cursor: pointer;
+    transition: background .15s; flex-shrink: 0;
   }
-
   .ama-send:hover { background: #A84E22; }
-  .ama-send:disabled { opacity: 0.4; cursor: not-allowed; }
+  .ama-send:disabled { opacity: .4; cursor: not-allowed; }
 
   @media (max-width: 480px) {
-    .ama-panel { width: calc(100vw - 24px); right: 12px; bottom: 80px; }
-    .ama-trigger { right: 16px; bottom: 16px; }
+    .ama-panel { width: calc(100vw - 20px); right: 10px; bottom: 10px; height: calc(100vh - 20px); border-radius: 14px; }
+    .ama-trigger { right: 14px; bottom: 14px; }
+    .ama-nudge { max-width: 200px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ama-pill, .ama-pill-av::before, .ama-status { animation: none !important; }
+    .ama-panel.open, .ama-msg, .ama-nudge { animation: none !important; transition: none !important; }
   }
 </style>
 
-<div class="ama-trigger">
-  <div class="ama-bubble-hint">Ask me anything about Shira</div>
-  <button class="ama-btn" id="ama-toggle" aria-label="Chat with Ama">
-    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 2C6.477 2 2 6.145 2 11.243c0 2.906 1.378 5.504 3.546 7.238V22l3.677-2.121A11.3 11.3 0 0012 20.486c5.523 0 10-4.145 10-9.243S17.523 2 12 2zm1 13H7v-2h6v2zm4-4H7V9h10v2z"/>
-    </svg>
+<div class="ama-trigger" id="ama-trigger">
+  <div class="ama-nudge" id="ama-nudge">
+    <button class="ama-nudge-x" id="ama-nudge-x" aria-label="Dismiss">&times;</button>
+    <b>Psst.</b> I'm Ama. I know everything about Shira.<br>Ask me anything.
+  </div>
+  <button class="ama-pill" id="ama-toggle" aria-label="Chat with Ama about Shira">
+    <span class="ama-pill-av">A</span>
+    <span class="ama-pill-label">Ask Ama<small>about Shira</small></span>
   </button>
 </div>
 
 <div class="ama-panel" id="ama-panel" role="dialog" aria-label="Chat with Ama">
   <div class="ama-header">
-    <div class="ama-avatar">AMA</div>
+    <div class="ama-avatar">A</div>
     <div class="ama-header-text">
       <div class="ama-name">Ama</div>
       <div class="ama-tagline">Ask me anything about Shira</div>
     </div>
-    <div class="ama-status"></div>
+    <div class="ama-status" title="Online"></div>
     <button class="ama-close" id="ama-close" aria-label="Close chat">&times;</button>
   </div>
 
@@ -351,43 +336,71 @@
 
 <script>
 (function() {
+  // ====== EDIT THIS ONE LINE ======
   const PROXY_URL = 'YOUR_VERCEL_URL/api/chat';
+  // e.g. 'https://ama-proxy-abc123.vercel.app/api/chat'
+  // ================================
+
   let amaMessages = [];
   let amaLoading = false;
+  let amaOpened = false;
 
+  const trigger = document.getElementById('ama-trigger');
   const panel = document.getElementById('ama-panel');
   const toggle = document.getElementById('ama-toggle');
-  const close = document.getElementById('ama-close');
+  const closeBtn = document.getElementById('ama-close');
   const messagesEl = document.getElementById('ama-messages');
   const inputEl = document.getElementById('ama-input');
   const sendBtn = document.getElementById('ama-send');
   const suggestionsEl = document.getElementById('ama-suggestions');
+  const nudge = document.getElementById('ama-nudge');
+  const nudgeX = document.getElementById('ama-nudge-x');
 
-  toggle.addEventListener('click', () => {
-    const isOpen = panel.classList.contains('open');
-    panel.classList.toggle('open');
-    if (!isOpen && amaMessages.length === 0) amaAddMsg('ama', "Hi, I'm Ama — I know everything about Shira Kates and I'm not shy about it. Ask me anything: her work, her thinking, her case studies, what she's looking for next. What do you want to know?");
+  // Auto-nudge: pops the bubble ~4s after load, hides itself after ~9s.
+  let nudgeTimer = setTimeout(() => {
+    if (!amaOpened) nudge.classList.add('show');
+    nudgeTimer = setTimeout(() => nudge.classList.remove('show'), 9000);
+  }, 4000);
+
+  nudgeX.addEventListener('click', (e) => {
+    e.stopPropagation();
+    nudge.classList.remove('show');
+    clearTimeout(nudgeTimer);
   });
 
-  close.addEventListener('click', () => panel.classList.remove('open'));
+  function openPanel() {
+    amaOpened = true;
+    nudge.classList.remove('show');
+    clearTimeout(nudgeTimer);
+    trigger.style.display = 'none';
+    panel.classList.add('open');
+    if (amaMessages.length === 0) {
+      amaAddMsg('ama', "Hi, I'm Ama. I know everything about Shira Kates and I'm not shy about it. Ask me anything: her work, her thinking, her case studies, what she's looking for next. What do you want to know?");
+    }
+    setTimeout(() => inputEl.focus(), 50);
+  }
+  function closePanel() {
+    panel.classList.remove('open');
+    trigger.style.display = 'flex';
+  }
+
+  toggle.addEventListener('click', openPanel);
+  closeBtn.addEventListener('click', closePanel);
 
   function amaAddMsg(role, content, isTyping = false) {
     const div = document.createElement('div');
     div.className = `ama-msg ${role}`;
-
     const av = document.createElement('div');
     av.className = `ama-msg-av ${role === 'ama' ? 'a' : 'u'}`;
     av.textContent = role === 'ama' ? 'A' : 'You';
-
     const bubble = document.createElement('div');
     bubble.className = 'ama-msg-bubble' + (isTyping ? ' ama-typing' : '');
-
     if (isTyping) {
       bubble.innerHTML = '<div class="ama-dot"></div><div class="ama-dot"></div><div class="ama-dot"></div>';
     } else {
-      bubble.innerHTML = content.replace(/\n/g, '<br>');
+      bubble.textContent = content;            // safe text
+      bubble.innerHTML = bubble.innerHTML.replace(/\n/g, '<br>');
     }
-
     div.appendChild(av);
     div.appendChild(bubble);
     messagesEl.appendChild(div);
@@ -422,17 +435,15 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: amaMessages })
       });
-
       const data = await res.json();
-      const reply = data.content?.find(b => b.type === 'text')?.text || "Something went sideways on my end. Try again?";
-
+      const reply = (data.content && data.content.find(b => b.type === 'text')?.text)
+        || "Something went sideways on my end. Try again?";
       typingEl.remove();
       amaAddMsg('ama', reply);
       amaMessages.push({ role: 'assistant', content: reply });
-
     } catch (err) {
       typingEl.remove();
-      amaAddMsg('ama', "Connection hiccup — try again in a moment.");
+      amaAddMsg('ama', "Connection hiccup — give me another go in a moment.");
     }
 
     amaLoading = false;
@@ -443,10 +454,9 @@
   inputEl.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); amaSend(); }
   });
-
   inputEl.addEventListener('input', () => {
     inputEl.style.height = 'auto';
-    inputEl.style.height = Math.min(inputEl.scrollHeight, 80) + 'px';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 84) + 'px';
   });
 })();
 </script>
