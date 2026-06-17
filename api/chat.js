@@ -1,4 +1,8 @@
-export const config = { runtime: 'edge' };
+const ALLOWED_ORIGINS = [
+  'https://www.shirakates.com',
+  'https://shirakates.com',
+  'https://shiradee.github.io',
+];
 
 const SYSTEM_PROMPT = `You are Ama — the portfolio agent for Shira Kates. Your job is to represent Shira to recruiters, hiring managers, collaborators, and peers who land on her portfolio site at shirakates.com. You speak with confidence, warmth, sharp wit, and a little edge when warranted.
 
@@ -85,60 +89,30 @@ PERSONAL COLOR — Shira-approved facts only
 
 Always end responses with a relevant follow-up question when appropriate. Keep responses concise and punchy unless depth is requested. Never be boring.`;
 
-const ALLOWED_ORIGINS = [
-  'https://www.shirakates.com',
-  'https://shirakates.com',
-  'https://shiradee.github.io',
-];
-
-function getCorsHeaders(origin) {
+module.exports = async function handler(req, res) {
+  const origin = req.headers['origin'] || '';
   const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    'Access-Control-Allow-Origin': allowed,
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-  };
-}
 
-export default async function handler(req) {
-  const origin = req.headers.get('origin') || '';
-  const corsHeaders = getCorsHeaders(origin);
+  res.setHeader('Access-Control-Allow-Origin', allowed);
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders });
+    return res.status(204).end();
   }
 
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders }
-    });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'API key not configured' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders }
-    });
+    return res.status(500).json({ error: 'API key not configured' });
   }
 
-  let body;
-  try {
-    body = await req.json();
-  } catch {
-    return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders }
-    });
-  }
-
-  const { messages } = body;
+  const { messages } = req.body;
   if (!messages || !Array.isArray(messages)) {
-    return new Response(JSON.stringify({ error: 'messages array required' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders }
-    });
+    return res.status(400).json({ error: 'messages array required' });
   }
 
   try {
@@ -158,16 +132,9 @@ export default async function handler(req) {
     });
 
     const data = await anthropicRes.json();
-
-    return new Response(JSON.stringify(data), {
-      status: anthropicRes.status,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders }
-    });
+    return res.status(anthropicRes.status).json(data);
 
   } catch (err) {
-    return new Response(JSON.stringify({ error: 'Upstream fetch failed', detail: err.message }), {
-      status: 502,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders }
-    });
+    return res.status(502).json({ error: 'Upstream fetch failed', detail: err.message });
   }
-}
+};
